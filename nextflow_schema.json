@@ -10,7 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["study_name", "study_type", "input", "contrasts", "outdir", "study_abundance_type"],
+            "required": ["study_name", "study_type", "input", "outdir"],
             "properties": {
                 "study_name": {
                     "type": "string",
@@ -24,7 +24,7 @@
                     "default": "rnaseq",
                     "description": "A string identifying the technology used to produce the data",
                     "help_text": "Currently 'rnaseq' or 'affy_array' may be specified.",
-                    "enum": ["rnaseq", "affy_array"],
+                    "enum": ["rnaseq", "affy_array", "Px"],
                     "fa_icon": "far fa-keyboard"
                 },
                 "input": {
