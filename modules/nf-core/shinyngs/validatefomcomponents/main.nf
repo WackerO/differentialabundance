@@ -30,6 +30,8 @@ process SHINYNGS_VALIDATEFOMCOMPONENTS {
     def feature = feature_meta ? "--feature_metadata '$feature_meta'" : ''
 
     """
+    echo $args > "/home-link/iivow01/git/differentialabundance/error/val_args"
+    head -4 "${assay_files.join(',')}" > "/home-link/iivow01/git/differentialabundance/error/head"
     validate_fom_components.R \\
         --sample_metadata "$sample" \\
         $feature \\
@@ -37,6 +39,7 @@ process SHINYNGS_VALIDATEFOMCOMPONENTS {
         --contrasts_file "$contrasts" \\
         --output_directory "$prefix" \\
         $args
+        # --assay_files "/home-link/iivow01/git/differentialabundance/error/tabnorm.normalizeMedian.tsv" \\
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
