@@ -132,8 +132,8 @@ workflow DIFFERENTIALABUNDANCE {
         ch_affy_platform_features = AFFY_JUSTRMA_RAW.out.annotation
     } else if (params.study_type == 'Px') {
         PROTEUS(proteus_in)
-        ch_in_raw = PROTEUS.out.normtab
-        ch_in_norm = PROTEUS.out.tab
+        ch_in_raw = PROTEUS.out.tab
+        ch_in_norm = PROTEUS.out.normtab
     }
 
     //// Fetch or derive a feature annotation table
@@ -171,11 +171,23 @@ workflow DIFFERENTIALABUNDANCE {
             .mix(GTF_TO_TABLE.out.versions)
     }
     else{
-
-        // Otherwise we can just use the matrix input 
-        matrix_as_anno_filename = "matrix_as_anno.${matrix_file.getExtension()}"
-        matrix_file.copyTo(matrix_as_anno_filename)
-        ch_features = Channel.of([ exp_meta, file(matrix_as_anno_filename)])
+        if (params.study_type == 'Px'){
+            ch_features = PROTEUS.out.normtab.map{
+                matrix_as_anno_filename = "matrix_as_anno.${it[1].getExtension()}"
+                it[1].copyTo(matrix_as_anno_filename)
+                it[1] = file(matrix_as_anno_filename)
+                it
+            }.dump(tag:'waaaaa')
+            
+            //ch_features = PROTEUS.out.normtab2 //Channel.of([ exp_meta, file(matrix_as_anno_filename)])
+            
+        }
+        else {
+            // Otherwise we can just use the matrix input 
+            matrix_as_anno_filename = "matrix_as_anno.${matrix_file.getExtension()}"
+            matrix_file.copyTo(matrix_as_anno_filename)
+            ch_features = Channel.of([ exp_meta, file(matrix_as_anno_filename)])
+        }
     }
 
     // Channel for the contrasts file
@@ -190,7 +202,7 @@ workflow DIFFERENTIALABUNDANCE {
             .map{tuple(it[0], [it[1], it[2]])}
     } else if (params.study_type == 'Px') {
         ch_matrices_for_validation = ch_in_raw
-            .combine(ch_in_norm)
+            .join(ch_in_norm)
             .map{tuple(it[0], it[1])}
             .dump(tag:'matval_px')
     }

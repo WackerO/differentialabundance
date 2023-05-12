@@ -35,11 +35,10 @@ process SHINYNGS_VALIDATEFOMCOMPONENTS {
     validate_fom_components.R \\
         --sample_metadata "$sample" \\
         $feature \\
-        --assay_files "${assay_files.join(',')}" \\
+        --assay_files "/home-link/iivow01/git/differentialabundance/error/tabnorm.normalizeMedian.tsv" \\
         --contrasts_file "$contrasts" \\
         --output_directory "$prefix" \\
         $args
-        # --assay_files "/home-link/iivow01/git/differentialabundance/error/tabnorm.normalizeMedian.tsv" \\
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
