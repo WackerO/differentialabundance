@@ -854,6 +854,11 @@
                     "description": "A logo to display in the report instead of the generic pipeline logo",
                     "fa_icon": "far fa-font-awesome-logo-full"
                 },
+                "additional_logo_file": {
+                    "type": "string",
+                    "default": "docs/images/nf-core-differentialabundance_logo_light.png",
+                    "description": "A second logo to display in the report together with the generic pipeline logo"
+                },
                 "css_file": {
                     "type": "string",
                     "default": "assets/nf-core_style.css",
@@ -878,6 +883,15 @@
                     "fa_icon": "fas fa-user-edit",
                     "description": "An author for reporting outputs"
                 },
+                "report_summary": {
+                    "type": "string",
+                    "format": "file-path",
+                    "mimetype": "text/csv",
+                    "pattern": "^\\S+\\.(csv|tsv|txt)$",
+                    "default": "None",
+                    "description": "You can provide a comma/tab-separated file with additional info about the project PI as well as institute",
+                    "help_text": "The following fields will be expected: 'Principal Investigator', 'PI Address', 'PI E Mail', 'PI Institute', 'PI Organization', 'Project Manager', 'Manager E Mail', 'Description'"
+                },                
                 "report_description": {
                     "type": "string",
                     "default": "None",

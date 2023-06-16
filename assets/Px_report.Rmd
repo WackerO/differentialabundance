@@ -138,7 +138,17 @@ library(knitr)
 library(yaml)
 library(shinyngs)
 library(plotly)
+library(ggplot2)
 library(DT)
+library(dplyr)
+
+# TODO
+#mulled-build --use-mamba build 'r-base=4.2.3,r-rmarkdown=2.21,r-yaml=2.3.7,bioconductor-enhancedvolcano=1.16.0,anaconda::gmp=6.2.1,conda-forge::r-ggplot2=3.4.2,conda-forge::r-upsetr'
+#mulled-build --use-mamba build 'r-base,r-rmarkdown,r-yaml,bioconductor-enhancedvolcano,anaconda::gmp,conda-forge::r-ggplot2,conda-forge::r-upsetr'
+#conda-forge::r-base conda-forge::r-rmarkdown conda-forge::r-yaml bioconda::bioconductor-enhancedvolcano anaconda::gmp conda-forge::r-ggplot2 #conda-forge::r-upsetr 
+#/home-link/iivow01/tools/mambaforge/bin/python3.10
+#/home-link/iivow01/tools/mambaforge/envs/mulled/lib/python3.11/site-packages/galaxy/tool_util/deps/mulled
+#galaxy.tool_util.deps.mulled.mulled_build
 ```
 
 ```{r include = FALSE}
@@ -172,47 +182,53 @@ make_params_table <- function(name, pattern = NULL, remove_pattern = FALSE){
 report_title <- paste0('Differential ',  params$features_type, ' abundance report', ifelse(is.null(params$report_title), '', paste0(': ', params$report_title)))
 report_subtitle <- paste0(ifelse(is.null(params$report_author), '', paste0('By ', params$report_author, ', ')), 'differentialabundance workflow version', versions[["Workflow.nf-core/differentialabundance"]])
 
-
-
 if (! is.null(params$report_summary)) {
-  write(params$report_summary, file="/home-link/iivow01/git/differentialabundance/error2/summary_file")
   report_summary <- read.csv(file = params$report_summary, sep="\t", header = TRUE)
   write(names(report_summary), file="/home-link/iivow01/git/differentialabundance/error2/summary_names")
-  PI = as.character(report_summary$Principal.Investigator)
-  PI_address = as.character(report_summary$PI.Address)
-  PI_email = as.character(report_summary$PI.E.Mail)
-  PI_institute = as.character(report_summary$PI.Institute)
-  PI_organization = as.character(report_summary$PI.Organization)
-  PM = as.character(report_summary$Project.Manager)
-  PM_email = as.character(report_summary$Manager.E.Mail)
-  description = as.character(report_summary$Description)
+  PI = as.character(report_summary$Principal.Investigator)            #Principal Investigator
+  PI_address = as.character(report_summary$PI.Address)                #PI Address
+  PI_email = as.character(report_summary$PI.E.Mail)                   #PI E Mail
+  PI_institute = as.character(report_summary$PI.Institute)            #PI Institute
+  PI_organization = as.character(report_summary$PI.Organization)      #PI Organization
+  PM = as.character(report_summary$Project.Manager)                   #Project Manager
+  PM_email = as.character(report_summary$Manager.E.Mail)              #Manager E Mail
+  description = as.character(report_summary$Description)              #Description
   report_summary_string <- paste0(
-                                    "**Project Members:** **_`",
+                                    "**Project Members:**\n**_",
                                     PI,
-                                    "_**",
-                                    PI_email, "<br>",
-                                    PI_institute, "<br>",
-                                    PI_organization, "<br>",
+                                    "_**\n",
+                                    PI_email, "\n",
+                                    PI_institute, "\n",
+                                    PI_organization, "\n",
                                     PI_address
                                   )
 }
-additional_logo <- "/home-link/iivow01/git/differentialabundance/docs/images/nf-core-differentialabundance_logo_dark.png"
-additional_logo <- "/home-link/iivow01/git/qbic_logo.png"
-title_string <- paste0('<img src="', file.path(params$input_dir, params$logo), '" style="float: left;"/>', report_title)
-write("sss", file="/home-link/iivow01/git/differentialabundance/error2/logdiff")
 
+title:  "<img src=\"`r file.path(params$input_dir, params$logo)`\" width=\"60%\" style=\"float: left;\"/><img src=\"`r additional_logo`\" width=\"20%\" style=\"float: right;\"/><br><br><br><br>`r report_title`"
+
+
+logo <- paste0('<img src="', file.path(params$input_dir, params$logo), '" style="float: left;", ifelse(! is.null(params$additional_logo)), 'width="60%"/>', '/>')
+if (! is.null(params$additional_logo)) {
+  additional_logo <- paste0('<img src="', file.path(params$input_dir, params$additional_logo), '" style="float: right;"/>')
+} else {
+  additional_logo <- ""
+}
+
+write(additional_logo, file="/home-link/iivow01/git/differentialabundance/error2/add")
+write(logo, file="/home-link/iivow01/git/differentialabundance/error2/log")
+
+title_string <- paste0(logo, additional_logo, report_title)
+write(title_string, file="/home-link/iivow01/git/differentialabundance/error2/title_string")
 ```
 
 ---
-title:  "<img src=\"`r file.path(params$input_dir, params$logo)`\" width=\"60%\" style=\"float: left;\"/><img src=\"`r additional_logo`\" width=\"20%\" style=\"float: right;\"/><br><br><br><br>`r report_title`"
+title:  "`r title_string`"
 subtitle: `r report_subtitle`
-`r if (! is.null(params$report_summary)) {report_summary_string}`
-
 ---
 
 <!-- set notebook defaults -->
 
-```{r setup, include=FALSE}
+```{r setup, include=F}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -263,6 +279,7 @@ informative_variables <- informative_variables[ ! duplicated(lapply(structure(in
 assay_names <- simpleSplit(params$exploratory_assay_names)
 names(assay_names) = assay_names
 assay_files <- lapply(assay_names, function(x) params[[paste0(x, '_matrix')]])
+capture.output(assay_files, file="/home-link/iivow01/git/differentialabundance/error/assay_files")
 
 assay_data <- lapply(assay_files, function(x) {
   mat <- read_matrix(
@@ -271,26 +288,40 @@ assay_data <- lapply(assay_files, function(x) {
     row.names = 1
   )
   colnames(mat) <- observations[[params$observations_name_col]][match(colnames(mat), rownames(observations))]
-
+  #mat
   # Bit hacky, but ensure log
-  if (max(mat, na.rm=T) > 20){
-    log2(mat+1)
-  }else{
-    mat 
-  }
+  #if (max(mat, na.rm=T) > 20){
+  #  log2(mat+1)
+  #}else{
+  #  mat 
+  #}
+  mat
 })
-
+capture.output(assay_data, file="/home-link/iivow01/git/differentialabundance/error/assay_data.tsv", sep="\t", quote=F)
 # Now we can rename the observations rows using the title field
 rownames(observations) <- observations[[params$observations_name_col]]
 
 # Run PCA early so we can understand how important each variable is
+write(names(assay_data), file=paste0("/home-link/iivow01/git/differentialabundance/error/names_assay_data.txt"))
 
 pca_datas <- lapply(names(assay_data), function(assay_type){
-  capture.output(assay_data[[assay_type]], file=paste0("/home-link/iivow01/git/differentialabundance/error/test_assaydatatypebla.txt")) #, quote=F, sep="\t"
-
+  capture.output(assay_data[[assay_type]], file=paste0("/home-link/iivow01/git/differentialabundance/error/assaydatatypebla.txt")) #, quote=F, sep="\t"
   compilePCAData(assay_data[[assay_type]])
+  #pca <- prcomp(t(na.omit(log10(assay_data[[assay_type]]))), scale = TRUE)
+  #capture.output(pca, file="/home-link/iivow01/git/differentialabundance/error/pca_log")
+  #sdat <- summary(pca)$importance
+  #sdat <- as.data.frame(sdat)
+  #write.table(sdat, file="/home-link/iivow01/git/differentialabundance/error/sdat_log.tsv", quote=F, sep="\t")
+  #pca <- prcomp(t(na.omit((assay_data[[assay_type]]))), scale = TRUE)
+  #capture.output(round(pca$sdev, 6), file="/home-link/iivow01/git/differentialabundance/error/pca_nolog")
+  #sdat <- summary(pca)$importance
+  #sdat <- as.data.frame(sdat)
+  #write.table(round(sdat, 6), file="/home-link/iivow01/git/differentialabundance/error/sdat_nolog.tsv", quote=F, sep="\t")
+  #  compilePCAData(assay_data[[assay_type]])
+
 })
 names(pca_datas) <- names(assay_data)
+write.table(pca_datas, file=paste0("/home-link/iivow01/git/differentialabundance/error/hmmm.tsv"), quote=F, sep="\t")
 
 pca_vs_meta <- anova_pca_metadata(pca_datas[[params$exploratory_final_assay]]$coords, observations[,informative_variables, drop = FALSE], pca_datas[[params$exploratory_final_assay]]$percentVar)
 
@@ -468,20 +499,23 @@ The following plots show the abundance value distributions of input matrices. A 
 ```{r, include=FALSE}
 
 ```
-#### Box plots
+#### Box plots {.tabset}
 
 ```{r, echo=FALSE, results='asis', fig.height=8}
-
-p <- ggplot_boxplot(
-  assay_data, 
-  experiment = observations, 
-  colorby = main_grouping_variable, 
-  expressiontype = paste("count per", params$features_type), 
-  palette = groupColorScale,
-  whisker_distance = params$exploratory_whisker_distance,
-  base_size=8
-)
-print(p)
+for (a in names(assay_data)) {
+  cat(paste0("\n##### ", prettifyVariablename(a), "\n"))
+  p <- ggplot_boxplot(
+    assay_data[[a]], 
+    experiment = observations, 
+    colorby = main_grouping_variable, 
+    expressiontype = paste("count per", params$features_type), 
+    palette = groupColorScale,
+    whisker_distance = params$exploratory_whisker_distance,
+    base_size=8
+  )
+  print(p)
+  cat("\n")
+}
 ```
 
 Whiskers in the above boxplots show `r params$exploratory_whisker_distance` times the inter-quartile range.
@@ -502,7 +536,7 @@ plotly_densityplot(
 cat(paste0("\n### ", ucfirst(params$observations_type), " relationships\n"))
 ```
 
-#### Principal components plots {.tabset}
+#### Principal components plots
 
 Principal components analysis was conducted based on the `r params$exploratory_n_features` most variable `r params$features_type`s. Each component was annotated with its percent contribution to variance. 
 
@@ -547,7 +581,6 @@ for (assay_type in rev(names(assay_data))){
         labels = plotdata$name,
         show_labels = TRUE
       )
-    
       if (d == "3") {
         plot_args$z <- pca_data$coords[, 3]
         plot_args$zlab <- labels[3]
@@ -556,6 +589,36 @@ for (assay_type in rev(names(assay_data))){
       print(htmltools::tagList(do.call("plotly_scatterplot", plot_args)))
     }
   }
+}
+```
+
+<!-- TODO move + rename this section? -->
+#### Scree plots {.tabset}
+
+The scree plot below shows the proportion of variance that is explained by each of the PCA components.
+
+```{r, echo=FALSE, results='asis', message=F}
+for (assay_type in rev(names(assay_data))){
+  imp <- summary(pca_datas[[assay_type]])
+  cat(paste0("\n##### ", prettifyVariablename(assay_type), "\n"))
+    
+  pca <- prcomp(t(na.omit((assay_data[[assay_type]]))), scale = TRUE)
+  imp <- t(as.data.frame(summary(pca)$importance)[2,])
+  imp <- as.data.frame(cbind(PCA=rownames(imp), imp))
+  colnames(imp) <- c("PCA", "POV")
+
+  write.table(imp, file=paste0("/home-link/iivow01/git/differentialabundance/error/", assay_type, "_", "imp.tsv"), quote=F, sep="\t")
+  write.table(imp$PCA, file=paste0("/home-link/iivow01/git/differentialabundance/error/", assay_type, "_", "imp_data1.tsv"), quote=F, sep="\t")
+  write.table(imp$POV, file=paste0("/home-link/iivow01/git/differentialabundance/error/", assay_type, "_", "imp_data2.tsv"), quote=F, sep="\t")
+      
+  p <- ggplot(data=imp, aes(x=factor(PCA, level=imp$PCA), y=POV)) + geom_bar(stat="identity") +
+    xlab('') +
+    ylab('Proportion of Variance') +
+    theme_bw() +
+    theme(legend.title = element_blank()) +
+    theme(text = element_text(size=12))
+  print(p)
+  cat("\n")
 }
 ```
 
@@ -574,6 +637,10 @@ if (nrow(pca_vs_meta) == 1){
 }else{
   plot_pca_meta <- pca_vs_meta
 }
+
+
+write.table(-log10(plot_pca_meta), file=paste0("/home-link/iivow01/git/differentialabundance/error/plot_pca_meta_log.tsv"), quote=F, sep="\t")
+write.table((plot_pca_meta), file=paste0("/home-link/iivow01/git/differentialabundance/error/plot_pca_meta.tsv"), quote=F, sep="\t")
 
 d3heatmap::d3heatmap(
   -log10(plot_pca_meta),
@@ -610,11 +677,13 @@ A hierarchical clustering of `r params$features_type`s was undertaken based on t
 for (assay_type in rev(names(assay_data))){
   for (iv in informative_variables){
     cat(paste0("\n##### ", prettifyVariablename(assay_type), " (", iv, ")\n"))
+    capture.output(assay_data[[assay_type]], file=paste0("/home-link/iivow01/git/differentialabundance/error/selectstuff_", assay_type, "_", iv))
+    capture.output(assay_type, file=paste0("/home-link/iivow01/git/differentialabundance/error/type"))
     variable_genes <- selectVariableGenes(matrix = assay_data[[assay_type]], ntop = params$exploratory_n_features)
+    capture.output(assay_data[[assay_type]][variable_genes, ], file=paste0("/home-link/iivow01/git/differentialabundance/error/dendrostuff_", assay_type, "_", iv))
 
     dendroColorScale <- makeColorScale(length(unique(observations[[iv]])), palette = params$exploratory_palette_name)
-        capture.output(assay_data[[assay_type]][variable_genes, ], file=paste0("/home-link/iivow01/git/differentialabundance/error2/dendrostuff_test_", assay_type, "_", iv))
-
+    capture.output("assay_data[[assay_type]][variable_genes, ]", file=paste0("/home-link/iivow01/git/differentialabundance/error/dendrostuff_"))
     p <- clusteringDendrogram(
       2^assay_data[[assay_type]][variable_genes, ],
       observations[, iv, drop = FALSE],
@@ -717,11 +786,39 @@ differential_summary_string <- paste(
 cat(differential_summary_string)
 ```
 
-### Differential `r params$features_type` details
+### Volcano plots
 
 ```{r, echo=FALSE, results='asis'}
+
+# Set up palette of 4 colors
+volcano_palette <- colorRampPalette(colors = c("gray", "green", "blue", "red"))(4)
+
+# Two functions to add vertical/horizontal lines to the volcano plot
+vline <- function(x = 0, color = "black") {
+  list(
+    type = "line",
+    y0 = 0,
+    y1 = 1,
+    yref = "paper",
+    x0 = x,
+    x1 = x,
+    line = list(color = color, dash="dot")
+  )
+}
+hline <- function(y = 0, color = "black") {
+  list(
+    type = "line",
+    x0 = 0,
+    x1 = 1,
+    xref = "paper",
+    y0 = y,
+    y1 = y,
+    line = list(color = color, dash="dot")
+  )
+}
+
 for (i in 1:nrow(contrasts)){
-  cat("\n#### ", contrast_descriptions[i], "  {.tabset}\n")
+  cat("\n#### ", contrast_descriptions[i], "\n")
   
   ## Make a volcano plot for the contrast first
   
@@ -736,13 +833,26 @@ for (i in 1:nrow(contrasts)){
   # NAs in the fields we need.
   full_de <- differential_results[[i]]
   full_de <- subset(full_de, (! is.na(full_de[[params$differential_fc_column]])) & (! is.na(full_de[[params$differential_qval_colum]])) )
+  #full_de[[params$differential_fc_column]] <- -log2(full_de[[params$differential_fc_column]])
+  #full_de[[params$differential_pval_column]] <- -log10(full_de[[params$differential_pval_column]])
   
+  #full_de$color <- with(full_de, ifelse(params$differential_fc_column>=params$differential_min_fold_change & params$differential_pval_column<=params$differential_max_qval, 4, ifelse(params$differential_fc_column>=params$differential_min_fold_change, 2, ifelse(params$differential_pval_column<=params$differential_max_qval, 3, 1))))
+  
+  full_de <- full_de
+  full_de$color <- 1                                                                                                                  # default (black)
+  full_de$color[abs(full_de[[params$differential_fc_column]]) >= log2(params$differential_min_fold_change)] <- 2              # high FC (green)
+  full_de$color[full_de[[params$differential_fc_column]] >= params$differential_max_qval] <- 3                                # low p val (blue)
+  full_de$color[abs(full_de[[params$differential_fc_column]]) >= log2(params$differential_min_fold_change) & full_de[[params$differential_fc_column]] >= params$differential_max_qval] <- 4                                                                     # high FC & low p val (red)
+  
+  write.table(full_de, file="/home-link/iivow01/git/differentialabundance/error/full_de.tsv", quote=F, sep="\t")
+
   # We'll color by whether features are differential according to supplied thresholds
 
   p_value_types <- list(Adjusted = params$differential_qval_column, Unadjusted = params$differential_pval_column)
   p_value_thresholds <- list(Adjusted = params$differential_max_qval, Unadjusted = params$differential_max_pval)
   
-  for (pvt in names(p_value_types)){
+  
+for (pvt in names(p_value_types)){
     cat("\n##### ", pvt, " p values\n")
     pval_column <- p_value_types[[pvt]]
   
@@ -756,26 +866,37 @@ for (i in 1:nrow(contrasts)){
     vline_thresholds[[paste(params$differential_fc_column, '<-', log2(params$differential_min_fold_change))]] = -log2(params$differential_min_fold_change)
     vline_thresholds[[paste(params$differential_fc_column, '>', log2(params$differential_min_fold_change))]] = log2(params$differential_min_fold_change)
 
-    plot_args <- list(
-      x = full_de[[params$differential_fc_column]],
-      y = -log10(full_de[[pval_column]]),
-      colorby = full_de$differential_status,
-      ylab = paste("-log(10)", pval_column),
-      xlab = xlabel <- paste("higher in", contrasts$reference[i], "          <<", params$differential_fc_column, ">>           higher in", contrasts$target[i]) ,
-      labels = full_de[[label_col]],
-      hline_thresholds = hline_thresholds,
-      vline_thresholds = vline_thresholds,
-      show_labels = FALSE,
-      legend_title = "Differential status",
-      palette = makeColorScale(2, params$differential_palette_name)
-    )
+    write.table(full_de, file="/home-link/iivow01/git/differentialabundance/error/full_de.tsv", sep="\t", quote=F)
+    write.table(full_de[[pval_column]][full_de$color==1], file="/home-link/iivow01/git/differentialabundance/error/full_de_sub.tsv", sep="\t", quote=F)
+    capture.output(full_de$color, file="/home-link/iivow01/git/differentialabundance/error/colorbla.tsv")
+
+    write.table(full_de$color, file="/home-link/iivow01/git/differentialabundance/error/color.tsv", sep="\t", quote=F)
+    plot_args <- list(type = "scatter", mode   = 'markers')
   
     # Let's equalize the axes
     max_fc <- max(abs(full_de[[params$differential_fc_column]])) * 1.1
-    p <- do.call(plotly_scatterplot, plot_args) %>%
-      layout(xaxis = list(range=list(-max_fc, max_fc)))
+    p <- do.call(plot_ly, plot_args) %>%
+      layout(xaxis = list(range=list(-max_fc, max_fc),
+              title = paste("higher in", contrasts$reference[i], "          <<", params$differential_fc_column, ">>           higher in", contrasts$target[i]))
+             # shapes = list(
+             #   hline(-log10(p_value_thresholds[[pvt]])),
+             #   hline(log10(p_value_thresholds[[pvt]])),
+             #   vline(log2(params$differential_min_fold_change))
+             # )
+      ) %>%
+      add_trace(mode = "markers", name = "Not significant", x = full_de[[params$differential_fc_column]][full_de$color==1], y = -log10(full_de[[pval_column]][full_de$color==1]), marker = list(color = "black")) %>%
+      add_trace(mode = "markers", name = paste0("abs(", params$differential_fc_column, ")>", params$differential_min_fold_change), x = full_de[[params$differential_fc_column]][full_de$color==2], y = -log10(full_de[[pval_column]][full_de$color==2]), marker = list(color = "green")) %>%
+      add_trace(mode = "markers", name = paste0(pval_column, "<=", params$differential_max_qval), x = full_de[[params$differential_fc_column]][full_de$color==3], y = -log10(full_de[[pval_column]][full_de$color==3]), marker = list(color = "blue")) %>%
+      add_trace(mode = "markers", name = paste0("abs(", params$differential_fc_column, ")>", params$differential_min_fold_change, "\n& ", pval_column, "<=", params$differential_max_qval), x = full_de[[params$differential_fc_column]][full_de$color==4], y = -log10(full_de[[pval_column]][full_de$color==4]), marker = list(color = "red"))
+ 
+# differential_status[abs(full_de[[params$differential_fc_column]]) > log2(params$differential_min_fold_change) & full_de[[pval_column]] < p_value_thresholds[[pvt]]]
+ 
+ 
  
     print(htmltools::tagList(p))
+  
+
+
   
     ## ... then show tables of the up/ down genes
       
@@ -909,5 +1030,6 @@ print( htmltools::tagList(datatable(versions_table, caption = "Software versions
 ```
 
 ```{r, echo=FALSE, results='asis'}
+write("lkfjkasd", file="/home-link/iivow01/git/differentialabundance/error2/ajajf.txt")
 htmltools::includeMarkdown(params$citations)
 ```

@@ -439,6 +439,8 @@ workflow DIFFERENTIALABUNDANCE {
         .map{ tuple(exp_meta, it) }
 
     ch_logo_file = Channel.from(logo_file)
+    if (params.additional_logo_file) { ch_additional_logo_file = Channel.fromPath(params.additional_logo_file) } else { ch_additional_logo_file = Channel.of([]) }
+
     ch_css_file = Channel.from(css_file)
     ch_citations_file = Channel.from(citations_file)
 
@@ -448,6 +450,7 @@ workflow DIFFERENTIALABUNDANCE {
         .combine(ch_contrasts_file.map{it.tail()})
         .combine(CUSTOM_DUMPSOFTWAREVERSIONS.out.yml)
         .combine(ch_logo_file)
+        .combine(ch_additional_logo_file)
         .combine(ch_css_file)
         .combine(ch_citations_file)
         .combine(ch_differential.map{it[1]}.toList())
@@ -489,7 +492,7 @@ workflow DIFFERENTIALABUNDANCE {
 
     def report_file_names = [ 'observations', 'features' ] +
         params.exploratory_assay_names.split(',').collect { "${it}_matrix".toString() } +
-        [ 'contrasts_file', 'versions_file', 'logo', 'css', 'citations' ]
+        [ 'contrasts_file', 'versions_file', 'logo', 'additional_logo', 'css', 'citations' ]
 
     // Condition params reported on study type
 
