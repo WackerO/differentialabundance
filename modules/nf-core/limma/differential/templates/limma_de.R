@@ -303,7 +303,10 @@ if (! is.null(opt\$block)){
 if (! is.null(opt\$correlation)){
     lmfit_args[['correlation']] = opt\$correlation
 }
-
+write.table(intensities.table[order(row.names(intensities.table)), ], file="/home-link/iivow01/git/differentialabundance/error/int.tsv", sep="\t", quote=F)
+write.table(design, file="/home-link/iivow01/git/differentialabundance/error/design.tsv", sep="\t", quote=F)
+capture.output(opt, file="/home-link/iivow01/git/differentialabundance/error/opt")
+capture.output(lmfit_args, file="/home-link/iivow01/git/differentialabundance/error/lmfit_args")
 fit <- do.call(lmFit, lmfit_args)
 
 # Contrasts bit
