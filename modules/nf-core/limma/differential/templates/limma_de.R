@@ -305,14 +305,17 @@ if (! is.null(opt\$correlation)){
 }
 write.table(intensities.table[order(row.names(intensities.table)), ], file="/home-link/iivow01/git/differentialabundance/error/int.tsv", sep="\t", quote=F)
 write.table(design, file="/home-link/iivow01/git/differentialabundance/error/design.tsv", sep="\t", quote=F)
-capture.output(opt, file="/home-link/iivow01/git/differentialabundance/error/opt")
 capture.output(lmfit_args, file="/home-link/iivow01/git/differentialabundance/error/lmfit_args")
+write.table(as.matrix(intensities.table), file="/home-link/iivow01/git/differentialabundance/error/int.tsv", sep="\t", quote=F)
+write.table(as.matrix(intensities.table)[order(rownames(as.matrix(intensities.table))),], file=paste0(opt\$output_prefix, "_iii_int.tsv"), sep="\t", quote=F)
 fit <- do.call(lmFit, lmfit_args)
+capture.output(fit, file=paste0(opt\$output_prefix, "_iii_fit"))
 
 # Contrasts bit
 contrast <- paste(paste(contrast_variable, c(opt\$target_level, opt\$reference_level), sep='.'), collapse='-')
 contrast.matrix <- makeContrasts(contrasts=contrast, levels=design)
 fit2 <- contrasts.fit(fit, contrast.matrix)
+capture.output(fit2, file=paste0(opt\$output_prefix, "_iii_fit2"))
 
 # Prepare for and run ebayes
 
@@ -324,6 +327,9 @@ ebayes_args = c(
 )
 
 fit2 <- do.call(eBayes, ebayes_args)
+capture.output(fit2, file=paste0(opt\$output_prefix, "_iii_fit2_ebayes"))
+iii_pval <- fit2\$p.value[order(fit2\$p.value), ]
+write.table(iii_pval, file=paste0(opt\$output_prefix, "_iii_fit2_ebayes_pval.tsv"), sep="\t", quote=F)
 
 # Run topTable() to generate a results data frame
 
@@ -337,6 +343,7 @@ toptable_args = c(
 )
 
 comp.results <- do.call(topTable, toptable_args)[rownames(intensities.table),]
+capture.output(comp.results, file=paste0(opt\$output_prefix, "_iii_comp_results"))
 
 ################################################
 ################################################
@@ -358,6 +365,25 @@ out_df <- cbind(
 write.table(
     out_df,
     file = paste(opt\$output_prefix, 'limma.results.tsv', sep = '.'),
+    col.names = TRUE,
+    row.names = FALSE,
+    sep = '\t',
+    quote = FALSE
+)
+out_df <- out_df[order(out_df\$P.Value), ]
+
+capture.output(out_df, file=paste0(opt\$output_prefix, "_iii_outdf"))
+
+capture.output(colnames(comp.results), file="iii_cols")
+comp.results <- comp.results[c("P.Value", "adj.P.Val", "logFC")]
+comp.results <- comp.results[order(comp.results\$P.Value), ]
+write.table(comp.results, file=paste0(opt\$output_prefix, "_iii_comp.results.tsv"), sep="\t", quote=F)
+
+out_df <- out_df[c("P.Value", "adj.P.Val", "logFC")]
+out_df <- out_df[order(out_df\$P.Value), ]
+write.table(
+    out_df,
+    file = paste0(opt\$output_prefix, "_iii_out_limma.results.tsv"),
     col.names = TRUE,
     row.names = FALSE,
     sep = '\t',
