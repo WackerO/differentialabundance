@@ -29,7 +29,7 @@ if (params.study_type == 'affy_array'){
         error("CEL files archive not specified!")
     }
 } else if (params.study_type == 'maxquant') {
-    
+
         // Should the user have enabled --gsea_run, throw an error
         if (params.gsea_run) {
             error("Cannot run GSEA for maxquant data; please set --gsea_run to false.")
@@ -202,6 +202,9 @@ workflow DIFFERENTIALABUNDANCE {
             .first()
             .map{ meta, matrix -> tuple(exp_meta, matrix) }
 
+        ch_in_raw.dump(tag:'proteus_raw')
+        ch_in_norm.dump(tag:'proteus_norm')
+
         ch_versions = ch_versions.mix(PROTEUS.out.versions)
     } else if(params.study_type == 'geo_soft_file'){
 
@@ -312,9 +315,9 @@ workflow DIFFERENTIALABUNDANCE {
     // downstream plots separately.
     // Replace NA strings that might have snuck into the blocking column
 
-    ch_contrasts = VALIDATOR.out.contrasts
-        .map{it[1]}
-        .splitCsv ( header:true, sep:'\t' )
+    ch_contrasts = VALIDATOR.out.contrasts.dump(tag:'ch_contrasts1')
+        .map{it[1]}.dump(tag:'ch_contrasts2')
+        .splitCsv ( header:true, sep:'\t' ).dump(tag:'ch_contrasts3')
         .map{
             it.blocking = it.blocking.replace('NA', '')
             if (!it.id){
@@ -370,7 +373,7 @@ workflow DIFFERENTIALABUNDANCE {
             ch_control_features,
             ch_transcript_lengths
         )
-        
+
         // Let's make the simplifying assumption that the processed matrices from
         // the DESeq runs are the same across contrasts. We run the DESeq process
         // with matrices once for each contrast because DESeqDataSetFromMatrix()

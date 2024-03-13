@@ -247,6 +247,15 @@ proteinGroups <- readProteinGroups(
     measure.cols=measure.cols,
     data.cols=proteinColumns
 )
+proteinGroups\$tab <- na.omit(proteinGroups\$tab)
+
+
+write(length(readLines(opt\$intensities_file)), "lalala_nrow")
+write(nrow(proteinGroups\$tab), "lalala_nrow", append=T)
+saveRDS(proteinGroups, "lalala_proteinGroups_raw.rds")
+write(opt\$intensities_file, "lalala_nrow", append=T)
+write(paste(packageVersion("proteus")), "lalala_nrow", append=T)
+write(paste(strsplit(version[['version.string']], ' ')[[1]][3]), "lalala_nrow", append=T)
 
 # Define valid normalization functions
 
@@ -297,6 +306,10 @@ out_df <- data.frame(
     round_dataframe_columns(proteinGroups.normalized\$tab, digits=opt\$round_digits),
     check.names = FALSE
 )
+
+out_df <- out_df[order(rownames(out_df)),]
+
+
 out_df[[opt\$protein_id_col]] <- rownames(proteinGroups.normalized\$tab) # proteus saves the IDs as rownames; save these to a separate column
 out_df <- out_df[c(opt\$protein_id_col, colnames(out_df)[colnames(out_df) != opt\$protein_id_col])] # move ID column to first position
 write.table(
@@ -333,6 +346,8 @@ out_df <- data.frame(
         round_dataframe_columns(proteinGroups\$tab, digits=opt\$round_digits),
         check.names = FALSE
     )
+
+out_df <- out_df[order(rownames(out_df)),]
 out_df[[opt\$protein_id_col]] <- rownames(proteinGroups\$tab) # proteus saves the IDs as rownames; save these to a separate column
 out_df <- out_df[c(opt\$protein_id_col, colnames(out_df)[colnames(out_df) != opt\$protein_id_col])] # move ID column to first position
 

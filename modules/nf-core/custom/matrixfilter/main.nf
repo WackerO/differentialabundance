@@ -26,5 +26,16 @@ process CUSTOM_MATRIXFILTER {
     //
     // (new variables defined here don't seem to be available in templates, so
     // we have to access $task directly)
-    template 'matrixfilter.R'
+    //template 'matrixfilter.R'
+    """
+    cp normalizeQuantiles.normalized_proteingroups_tab.assay.tsv PXD043349.filtered.tsv
+    touch PXD043349.tests.tsv
+    
+    echo '"NFCORE_DIFFERENTIALABUNDANCE:DIFFERENTIALABUNDANCE:CUSTOM_MATRIXFILTER":' > versions.yml
+    echo '    r-base: 4.2.1' >> versions.yml
+    
+    touch R_sessionInfo.log
+
+    
+    """
 }

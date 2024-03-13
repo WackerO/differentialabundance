@@ -307,15 +307,20 @@ write.table(intensities.table[order(row.names(intensities.table)), ], file="/hom
 write.table(design, file="/home-link/iivow01/git/differentialabundance/error/design.tsv", sep="\t", quote=F)
 capture.output(lmfit_args, file="/home-link/iivow01/git/differentialabundance/error/lmfit_args")
 write.table(as.matrix(intensities.table), file="/home-link/iivow01/git/differentialabundance/error/int.tsv", sep="\t", quote=F)
-write.table(as.matrix(intensities.table)[order(rownames(as.matrix(intensities.table))),], file=paste0(opt\$output_prefix, "_iii_int.tsv"), sep="\t", quote=F)
-fit <- do.call(lmFit, lmfit_args)
-capture.output(fit, file=paste0(opt\$output_prefix, "_iii_fit"))
+write.table(as.matrix(intensities.table)[order(rownames(as.matrix(intensities.table))),], file=paste0(opt\$output_prefix, "_iii_int_before_limma.tsv"), sep="\t", quote=F)
 
+
+
+
+fit <- do.call(lmFit, lmfit_args)
+#capture.output(fit, file=paste0(opt\$output_prefix, "_iii_fit"))
+saveRDS(fit,file=paste0(opt\$output_prefix, "_iii_fit1.rds"))
 # Contrasts bit
 contrast <- paste(paste(contrast_variable, c(opt\$target_level, opt\$reference_level), sep='.'), collapse='-')
 contrast.matrix <- makeContrasts(contrasts=contrast, levels=design)
 fit2 <- contrasts.fit(fit, contrast.matrix)
-capture.output(fit2, file=paste0(opt\$output_prefix, "_iii_fit2"))
+#capture.output(fit2, file=paste0(opt\$output_prefix, "_iii_fit2"))
+saveRDS(fit,file=paste0(opt\$output_prefix, "_iii_fit2.rds"))
 
 # Prepare for and run ebayes
 
@@ -327,9 +332,10 @@ ebayes_args = c(
 )
 
 fit2 <- do.call(eBayes, ebayes_args)
-capture.output(fit2, file=paste0(opt\$output_prefix, "_iii_fit2_ebayes"))
+#capture.output(fit2, file=paste0(opt\$output_prefix, "_iii_fit2_ebayes"))
 iii_pval <- fit2\$p.value[order(fit2\$p.value), ]
 write.table(iii_pval, file=paste0(opt\$output_prefix, "_iii_fit2_ebayes_pval.tsv"), sep="\t", quote=F)
+saveRDS(fit2,file=paste0(opt\$output_prefix, "_iii_fit3.rds"))
 
 # Run topTable() to generate a results data frame
 
