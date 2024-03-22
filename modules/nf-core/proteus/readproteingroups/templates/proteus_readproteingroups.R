@@ -241,6 +241,12 @@ if (length(missing_columns) > 0) {
 # Replace proteus default ID column with user param and re-set the names of the resulting object (gsub sets the names to NULL)
 
 proteinColumns <- setNames(gsub("Majority protein IDs", opt\$protein_id_col, proteus::proteinColumns), names(proteus::proteinColumns))
+
+capture.output(opt\$intensities_file, file="intensities_file")
+write.table(sample.sheet, file="samples.tsv", quote=F, sep="\t")
+capture.output(measure.cols, file="measure.cols")
+capture.output(proteinColumns, file="proteinColumns")
+
 proteinGroups <- readProteinGroups(
     file=opt\$intensities_file,
     meta=sample.sheet,
