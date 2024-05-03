@@ -4,4 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::bioconductor-limma=3.54.0
+  - bioconda::bioconductor-limma=3.40.0

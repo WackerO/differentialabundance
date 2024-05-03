@@ -85,6 +85,7 @@ opt <- list(
 opt_types <- lapply(opt, class)
 
 args_opt <- parse_args('$task.ext.args')
+capture.output(args_opt, file="äääää")
 for ( ao in names(args_opt)){
     if (! ao %in% names(opt)){
         stop(paste("Invalid option:", ao))
@@ -162,7 +163,7 @@ if ((opt\$sample_file != '') && ( ! is.null(opt\$grouping_variable))){
 if (is.null(opt\$minimum_samples_not_na)) {
     opt\$minimum_samples_not_na <- ncol(abundance_matrix) * opt\$minimum_proportion_not_na
 }
-
+write(opt\$minimum_samples_not_na, file="naaaaa")
 # Define the tests
 
 tests <- list(

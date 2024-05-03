@@ -303,13 +303,18 @@ if (! is.null(opt\$block)){
 if (! is.null(opt\$correlation)){
     lmfit_args[['correlation']] = opt\$correlation
 }
+lmfit_args[['ndups']] = 1
 
 fit <- do.call(lmFit, lmfit_args)
+saveRDS(fit, file="fit1.rds")
+capture.output(fit, file="fit1.txt")
 
 # Contrasts bit
 contrast <- paste(paste(contrast_variable, c(opt\$target_level, opt\$reference_level), sep='.'), collapse='-')
 contrast.matrix <- makeContrasts(contrasts=contrast, levels=design)
 fit2 <- contrasts.fit(fit, contrast.matrix)
+saveRDS(fit2, file="fit2.rds")
+capture.output(fit2, file="fit2.txt")
 
 # Prepare for and run ebayes
 
@@ -321,20 +326,22 @@ ebayes_args = c(
 )
 
 fit2 <- do.call(eBayes, ebayes_args)
+saveRDS(fit2, file="fit3.rds")
+capture.output(fit2, file="fit3.txt")
 
 # Run topTable() to generate a results data frame
 
 toptable_args = c(
     list(
         fit = fit2,
-        sort.by = 'none',
-        number = nrow(intensities.table)
+        number = Inf
     ),
     opt[c('adjust.method', 'p.value', 'lfc', 'confint')]
 )
-
+toptable_args[['adjust.method']] = 'BH'
+capture.output(toptable_args, file="topargs")
 comp.results <- do.call(topTable, toptable_args)[rownames(intensities.table),]
-
+comp.results <- comp.results[ order(row.names(comp.results)), ]
 ################################################
 ################################################
 ## Generate outputs                           ##

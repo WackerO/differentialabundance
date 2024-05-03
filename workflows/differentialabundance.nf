@@ -297,7 +297,8 @@ workflow DIFFERENTIALABUNDANCE {
                 normalised: it[1].name =~ /normali[sz]ed/
             }
         ch_raw = ch_validated_assays.raw
-        ch_norm = ch_validated_assays.normalised
+        //ch_norm = ch_validated_assays.normalised
+        ch_norm = ch_in_norm
     }
     else if (params.study_type == 'geo_soft_file') {
         ch_norm = VALIDATOR.out.assays
@@ -338,6 +339,7 @@ workflow DIFFERENTIALABUNDANCE {
     ch_samples_and_matrix = VALIDATOR.out.sample_meta
         .join(CUSTOM_MATRIXFILTER.out.filtered)     // -> meta, samplesheet, filtered matrix
         .first()
+        .dump(tag:'sam')
 
     if (params.study_type == 'affy_array' || params.study_type == 'geo_soft_file' || params.study_type == 'maxquant'){
 
@@ -346,6 +348,7 @@ workflow DIFFERENTIALABUNDANCE {
             ch_samples_and_matrix
         )
         ch_differential = LIMMA_DIFFERENTIAL.out.results
+        .dump(tag:'limma')
         ch_model = LIMMA_DIFFERENTIAL.out.model
 
         ch_versions = ch_versions
